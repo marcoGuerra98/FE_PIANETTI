@@ -1,0 +1,212 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Calendario</h1>
+      @if (schedule(); as s) {
+        <p class="subtitle">
+          @if (s.totale_partite) {
+            {{ s.partite_giocate }} di {{ s.totale_partite }} partite giocate
+          } @else {
+            Nessuna partita in programma
+          }
+        </p>
+      }
+    </div>
+    @if (auth.isAdmin()) {
+      <div class="actions">
+        <button mat-flat-button (click)="generate()" [disabled]="busy()">
+          <mat-icon>auto_awesome</mat-icon>
+          {{ (schedule()?.totale_partite ?? 0) > 0 ? 'Rigenera calendario' : 'Genera calendario' }}
+        </button>
+        @if ((schedule()?.totale_partite ?? 0) > 0) {
+          <button mat-icon-button [matMenuTriggerFor]="more" aria-label="Altre azioni">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #more="matMenu" xPosition="before">
+            <button mat-menu-item (click)="deleteSchedule()">
+              <mat-icon class="danger">delete_forever</mat-icon> Elimina calendario
+            </button>
+          </mat-menu>
+        }
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <app-loading />
+  } @else if (error()) {
+    <app-error-state (retry)="load()" />
+  } @else if (!giornate().length) {
+    <div class="card">
+      <app-empty-state icon="calendar_month" title="Il calendario non è ancora stato generato">
+        <p class="muted small">Servono almeno 4 squadre: girone unico di sola andata, poi semifinali e finali.</p>
+        @if (auth.isAdmin()) {
+          <button mat-flat-button (click)="generate()"><mat-icon>auto_awesome</mat-icon> Genera calendario</button>
+        } @else {
+          <a mat-stroked-button routerLink="/teams">Vedi le squadre</a>
+        }
+      </app-empty-state>
+    </div>
+  } @else {
+    <!-- Selettore giornata -->
+    <nav class="days card" aria-label="Giornate">
+      <button mat-icon-button (click)="step(-1)" [disabled]="selected() === giornate()[0].giornata" aria-label="Giornata precedente">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <div class="day-list" #dayList>
+        @for (d of giornate(); track d.giornata) {
+          <button
+            class="day"
+            [class.active]="d.giornata === selected()"
+            [class.done]="dayComplete(d)"
+            [class.ko]="d.fase !== 'GIRONE'"
+            (click)="selectDay(d)"
+            [attr.aria-current]="d.giornata === selected() ? 'true' : null"
+            [attr.data-day]="d.giornata"
+            [attr.aria-label]="dayTitle(d)"
+          >
+            {{ dayLabel(d) }}
+          </button>
+        }
+        <!-- Segnaposto non interattivi per le fasi finali non ancora generate -->
+        @if (!hasPhase('SEMIFINALE')) {
+          <span class="day placeholder" matTooltip="Le semifinali vengono create al termine del girone">SF</span>
+        }
+        @if (!hasPhase('FINALE_1_2')) {
+          <span class="day placeholder" matTooltip="Le finali vengono create al termine delle semifinali">F</span>
+        }
+      </div>
+      <button
+        mat-icon-button
+        (click)="step(1)"
+        [disabled]="selected() === giornate()[giornate().length - 1].giornata"
+        aria-label="Giornata successiva"
+      >
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </nav>
+
+    @if (current(); as day) {
+      <div class="day-header">
+        <h2>{{ dayTitle(day) }}</h2>
+        @if (dayComplete(day)) {
+          <span class="pill done"><mat-icon>check</mat-icon> Completata</span>
+        }
+      </div>
+
+      <div class="matches">
+        @for (m of day.partite; track m.id) {
+          <article class="match card" [class.played]="m.giocata">
+            <div class="meta">
+              @if (m.fase !== 'GIRONE') {
+                <span class="phase" [class.final]="m.fase === 'FINALE_1_2'">
+                  @if (m.fase === 'FINALE_1_2') {
+                    <mat-icon>emoji_events</mat-icon>
+                  }
+                  {{ faseLabel[m.fase] }}
+                </span>
+              }
+              <span class="date">
+                <mat-icon>schedule</mat-icon>
+                @if (m.data_ora) {
+                  <span class="cap">{{ m.data_ora | date: 'EEE d MMM y · HH:mm' }}</span>
+                } @else {
+                  Data da definire
+                }
+              </span>
+            </div>
+
+            <div class="line">
+              <a class="team home" [routerLink]="['/teams', m.squadra_casa_id]" [class.winner]="winnerSide(m) === 'casa'">
+                <span class="tname">{{ m.squadra_casa_nome }}</span>
+                <app-team-crest [src]="m.squadra_casa_stemma" [name]="m.squadra_casa_nome" [size]="34" />
+              </a>
+              <div class="score" [class.pending]="!m.giocata">
+                @if (m.giocata) {
+                  <span>{{ m.gol_casa }}</span><span class="sep">-</span><span>{{ m.gol_trasferta }}</span>
+                } @else {
+                  <span class="vs">VS</span>
+                }
+              </div>
+              <a class="team away" [routerLink]="['/teams', m.squadra_trasferta_id]" [class.winner]="winnerSide(m) === 'trasferta'">
+                <app-team-crest [src]="m.squadra_trasferta_stemma" [name]="m.squadra_trasferta_nome" [size]="34" />
+                <span class="tname">{{ m.squadra_trasferta_nome }}</span>
+              </a>
+            </div>
+
+            @if (m.giocata && m.marcatori.length) {
+              <div class="scorers">
+                <ul class="home">
+                  @for (mk of scorersOf(m, 'casa'); track $index) {
+                    <li>
+                      <ng-container *ngTemplateOutlet="scorerName; context: { $implicit: mk }" />
+                      @if (mk.goal > 1) {
+                        <b>×{{ mk.goal }}</b>
+                      }
+                      <mat-icon>sports_soccer</mat-icon>
+                    </li>
+                  }
+                </ul>
+                <ul class="away">
+                  @for (mk of scorersOf(m, 'trasferta'); track $index) {
+                    <li>
+                      <mat-icon>sports_soccer</mat-icon>
+                      <ng-container *ngTemplateOutlet="scorerName; context: { $implicit: mk }" />
+                      @if (mk.goal > 1) {
+                        <b>×{{ mk.goal }}</b>
+                      }
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (penaltyWinner(m); as w) {
+              <p class="penalties">Vince ai rigori: <strong>{{ w }}</strong></p>
+            }
+
+            @if (auth.isAdmin()) {
+              <div class="admin">
+                <button mat-button (click)="editResult(m)">
+                  <mat-icon>scoreboard</mat-icon> {{ m.giocata ? 'Modifica risultato' : 'Inserisci risultato' }}
+                </button>
+                <button mat-icon-button (click)="editMatch(m)" matTooltip="Modifica data e squadre" aria-label="Modifica partita">
+                  <mat-icon>edit_calendar</mat-icon>
+                </button>
+                @if (m.giocata) {
+                  <button mat-icon-button class="btn-danger" (click)="clearResult(m)" matTooltip="Annulla risultato" aria-label="Annulla risultato">
+                    <mat-icon>undo</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+
+      @if (day.riposa.length) {
+        <p class="rest">
+          <mat-icon>bedtime</mat-icon> Riposa:
+          @for (t of day.riposa; track t.id; let last = $last) {
+            <a [routerLink]="['/teams', t.id]">{{ t.nome }}</a>{{ last ? '' : ', ' }}
+          }
+        </p>
+      }
+
+      @if (day.fase === 'GIRONE' && !hasKnockout() && day.giornata === giornate()[giornate().length - 1].giornata) {
+        <p class="info">
+          <mat-icon>info</mat-icon>
+          Al termine del girone verranno create automaticamente le semifinali (1ª contro 4ª, 2ª contro 3ª).
+        </p>
+      }
+    }
+  }
+</div>
+
+<ng-template #scorerName let-mk>
+  @if (mk.autogol) {
+    <span class="own-goal">Autogol</span>
+  } @else {
+    <a [routerLink]="['/players', mk.giocatore_id]">{{ mk.giocatore_cognome ?? 'Giocatore eliminato' }}</a>
+  }
+</ng-template>

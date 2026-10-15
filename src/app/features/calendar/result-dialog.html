@@ -1,0 +1,125 @@
+<h2 mat-dialog-title>
+  Risultato
+  @if (knockout) {
+    <span class="phase">{{ faseLabel }}</span>
+  }
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <mat-dialog-content>
+    <!-- Tabellone punteggio -->
+    <div class="scoreboard">
+      <div class="team">
+        <app-team-crest [src]="teamCrest('casa')" [name]="teamName('casa')" [size]="44" />
+        <span>{{ teamName('casa') }}</span>
+      </div>
+      <div class="score">
+        <input
+          type="number"
+          min="0"
+          max="99"
+          formControlName="gol_casa"
+          aria-label="Gol squadra di casa"
+          [class.invalid]="form.controls.gol_casa.invalid"
+        />
+        <span class="dash">–</span>
+        <input
+          type="number"
+          min="0"
+          max="99"
+          formControlName="gol_trasferta"
+          aria-label="Gol squadra in trasferta"
+          [class.invalid]="form.controls.gol_trasferta.invalid"
+        />
+      </div>
+      <div class="team">
+        <app-team-crest [src]="teamCrest('trasferta')" [name]="teamName('trasferta')" [size]="44" />
+        <span>{{ teamName('trasferta') }}</span>
+      </div>
+    </div>
+
+    <!-- Rigori: solo nella fase finale e con punteggio in parità -->
+    @if (needsPenalties()) {
+      <div class="penalties">
+        <span><mat-icon>sports</mat-icon> Pareggio: chi ha vinto ai rigori?</span>
+        <mat-radio-group formControlName="rigori" aria-label="Vincitore ai rigori">
+          <mat-radio-button [value]="match.squadra_casa_id">{{ teamName('casa') }}</mat-radio-button>
+          <mat-radio-button [value]="match.squadra_trasferta_id">{{ teamName('trasferta') }}</mat-radio-button>
+        </mat-radio-group>
+      </div>
+    }
+
+    @if (loading()) {
+      <app-loading label="Caricamento rose…" />
+    } @else {
+      <!-- Marcatori per lato: il contatore confronta in tempo reale la somma dei goal con il punteggio -->
+      <div class="scorers">
+        @for (side of sides; track side) {
+          <section [formArrayName]="side">
+            <header>
+              <h3>Gol {{ teamName(side) }}</h3>
+              <span class="counter" [class.ok]="sums()[side] === score()[side]" [class.ko]="sums()[side] !== score()[side]">
+                {{ sums()[side] }}/{{ score()[side] }}
+              </span>
+            </header>
+
+            @for (row of array(side).controls; track row; let i = $index) {
+              <div class="row" [formGroupName]="i">
+                <mat-form-field class="player" subscriptSizing="dynamic">
+                  <mat-label>Giocatore</mat-label>
+                  <mat-select formControlName="giocatore_id">
+                    @for (o of availableOptions(side, i); track o.id) {
+                      <mat-option [value]="o.id">
+                        <span class="opt" [class.own-goal]="o.id === ownGoal">
+                          @if (o.id === ownGoal) {
+                            <span class="og-badge">AG</span>
+                          } @else if (o.ruolo) {
+                            <app-role-badge [ruolo]="o.ruolo" [full]="false" />
+                          }
+                          {{ o.label }}
+                        </span>
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field class="goals" subscriptSizing="dynamic">
+                  <mat-label>Gol</mat-label>
+                  <input matInput type="number" min="1" max="50" formControlName="goal" />
+                </mat-form-field>
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="removeScorer(side, i)"
+                  matTooltip="Rimuovi"
+                  aria-label="Rimuovi marcatore"
+                >
+                  <mat-icon>remove_circle_outline</mat-icon>
+                </button>
+              </div>
+            }
+
+            <!-- "Aggiungi marcatore" compare solo finché mancano goal da assegnare -->
+            @if (score()[side] === 0 && !array(side).length) {
+              <p class="empty">Nessun gol</p>
+            } @else if (sums()[side] < score()[side]) {
+              <button mat-stroked-button type="button" (click)="addScorer(side)">
+                <mat-icon>add</mat-icon> Aggiungi marcatore
+              </button>
+            }
+          </section>
+        }
+      </div>
+    }
+
+    @if (error()) {
+      <p class="error" role="alert"><mat-icon>error</mat-icon> {{ error() }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Annulla</button>
+    <button mat-flat-button type="submit" [disabled]="saving() || loading()">
+      {{ saving() ? 'Salvataggio…' : 'Salva risultato' }}
+    </button>
+  </mat-dialog-actions>
+</form>

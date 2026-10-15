@@ -1,0 +1,88 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Classifica</h1>
+      <p class="subtitle">Girone unico · le prime quattro accedono alla fase finale</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <app-loading />
+  } @else if (error()) {
+    <app-error-state (retry)="ngOnInit()" />
+  } @else {
+    <mat-tab-group class="card tabs" mat-stretch-tabs="false" animationDuration="150ms">
+      <mat-tab>
+        <ng-template mat-tab-label><mat-icon>leaderboard</mat-icon>&nbsp;Squadre</ng-template>
+        @if (!standings().length) {
+          <app-empty-state icon="shield" title="Nessuna squadra iscritta" />
+        } @else {
+          <app-data-table
+            [columns]="standingColumns"
+            [data]="standings()"
+            idKey="squadra_id"
+            [rowClass]="standingRowClass"
+            [clickable]="true"
+            (rowClick)="openTeam($event)"
+          >
+            <ng-template appCell="posizione" let-r>
+              <span class="pos">{{ r.posizione }}</span>
+            </ng-template>
+            <ng-template appCell="squadra" let-r>
+              <span class="team-cell">
+                <app-team-crest [src]="r.stemma" [name]="r.squadra_nome" [size]="26" />
+                <span class="name">{{ r.squadra_nome }}</span>
+              </span>
+            </ng-template>
+            <ng-template appCell="differenza_reti" let-r>
+              <span [class.pos-dr]="r.differenza_reti > 0" [class.neg-dr]="r.differenza_reti < 0">
+                {{ r.differenza_reti > 0 ? '+' : '' }}{{ r.differenza_reti }}
+              </span>
+            </ng-template>
+          </app-data-table>
+          <div class="legend">
+            <span class="dot"></span> Fase finale (semifinali 1ª-4ª e 2ª-3ª)
+            <span class="sep">·</span> Pt 3/1/0 · ordine: punti, differenza reti, gol fatti
+          </div>
+        }
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label><mat-icon>sports_soccer</mat-icon>&nbsp;Marcatori</ng-template>
+        @if (!scorers().length) {
+          <app-empty-state icon="sports_soccer" title="Nessun gol segnato finora" />
+        } @else {
+          <app-data-table
+            [columns]="scorerColumns"
+            [data]="scorers()"
+            idKey="giocatore_id"
+            [clickable]="true"
+            (rowClick)="openPlayer($event)"
+          >
+            <ng-template appCell="posizione" let-r>
+              <span class="pos" [class.podium]="r.posizione <= 3">{{ r.posizione }}</span>
+            </ng-template>
+            <ng-template appCell="giocatore" let-r>
+              <span class="player-cell">
+                <app-avatar [src]="r.foto" [name]="r.nome + ' ' + r.cognome" [size]="32" />
+                <span class="pname">
+                  <strong>{{ r.cognome }}</strong> {{ r.nome }}
+                  <small class="team-mobile">{{ r.squadra_nome ?? 'Svincolato' }}</small>
+                </span>
+              </span>
+            </ng-template>
+            <ng-template appCell="ruolo" let-r><app-role-badge [ruolo]="r.ruolo" [full]="false" /></ng-template>
+            <ng-template appCell="squadra" let-r>
+              @if (r.squadra_id) {
+                <a [routerLink]="['/teams', r.squadra_id]" (click)="$event.stopPropagation()">{{ r.squadra_nome }}</a>
+              } @else {
+                <span class="muted">Svincolato</span>
+              }
+            </ng-template>
+            <ng-template appCell="goal" let-r><span class="goals">{{ r.goal }}</span></ng-template>
+          </app-data-table>
+        }
+      </mat-tab>
+    </mat-tab-group>
+  }
+</div>

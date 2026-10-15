@@ -1,0 +1,108 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Giocatori</h1>
+      <p class="subtitle">
+        @if (!loading()) {
+          {{ players().length }} {{ players().length === 1 ? 'giocatore' : 'giocatori' }}
+        } @else {
+          &nbsp;
+        }
+      </p>
+    </div>
+    <div class="actions">
+      @if (auth.isAdmin()) {
+        <a mat-flat-button routerLink="/players/new"><mat-icon>person_add</mat-icon> Nuovo giocatore</a>
+      }
+    </div>
+  </div>
+
+  <section class="card filters" aria-label="Filtri">
+    <mat-form-field class="search" subscriptSizing="dynamic">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Cerca per nome</mat-label>
+      <input matInput [ngModel]="q()" (ngModelChange)="q.set($event)" autocomplete="off" />
+      @if (q()) {
+        <button mat-icon-button matSuffix (click)="q.set('')" aria-label="Svuota ricerca">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Squadra</mat-label>
+      <mat-select [value]="team()" (valueChange)="team.set($event)">
+        <mat-option value="">Tutte le squadre</mat-option>
+        <mat-option value="free"><em>Svincolati</em></mat-option>
+        @for (t of teams(); track t.id) {
+          <mat-option [value]="t.id">{{ t.nome }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Ordina per</mat-label>
+      <mat-select [value]="sort()" (valueChange)="sort.set($event)">
+        <mat-option value="overall_desc">Overall (dal più alto)</mat-option>
+        <mat-option value="overall_asc">Overall (dal più basso)</mat-option>
+        <mat-option value="nome">Cognome</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="roles" role="group" aria-label="Filtra per ruolo">
+      <button class="chip" [class.on]="!ruolo()" (click)="ruolo.set(null)">Tutti</button>
+      @for (r of ruoli; track r) {
+        <button class="chip" [class.on]="ruolo() === r" (click)="ruolo.set(ruolo() === r ? null : r)">
+          <app-role-badge [ruolo]="r" />
+        </button>
+      }
+    </div>
+
+    <mat-button-toggle-group
+      class="view-toggle"
+      [value]="view()"
+      (change)="setView($event.value)"
+      hideSingleSelectionIndicator
+      aria-label="Modalità di visualizzazione"
+    >
+      <mat-button-toggle value="cards" matTooltip="Card"><mat-icon>grid_view</mat-icon></mat-button-toggle>
+      <mat-button-toggle value="table" matTooltip="Tabella"><mat-icon>table_rows</mat-icon></mat-button-toggle>
+    </mat-button-toggle-group>
+  </section>
+
+  <!-- Lo spinner compare solo senza risultati: nelle ricerche successive la lista resta visibile, attenuata -->
+  @if (loading() && !players().length) {
+    <app-loading />
+  } @else if (error()) {
+    <app-error-state [message]="error()!" (retry)="reload()" />
+  } @else if (!players().length) {
+    <app-empty-state icon="person_search" [title]="hasFilters() ? 'Nessun giocatore corrisponde ai filtri' : 'Nessun giocatore inserito'">
+      @if (hasFilters()) {
+        <button mat-stroked-button (click)="resetFilters()">Azzera filtri</button>
+      } @else if (auth.isAdmin()) {
+        <a mat-flat-button routerLink="/players/new">Aggiungi il primo giocatore</a>
+      }
+    </app-empty-state>
+  } @else if (view() === 'cards') {
+    <div class="grid-cards" [class.dim]="loading()">
+      @for (p of players(); track p.id) {
+        <app-player-card [player]="p" [admin]="auth.isAdmin()" (edit)="edit($event)" (remove)="remove($event)" />
+      }
+    </div>
+  } @else {
+    <div class="card" [class.dim]="loading()">
+      <app-data-table [columns]="columns" [data]="players()" idKey="id" [clickable]="true" (rowClick)="open($event)">
+        <ng-template appCell="giocatore" let-p>
+          <span class="player-cell">
+            <app-avatar [src]="p.foto" [name]="p.nome + ' ' + p.cognome" [size]="34" />
+            <span>
+              <strong>{{ p.cognome }}</strong> {{ p.nome }}
+            </span>
+          </span>
+        </ng-template>
+        <ng-template appCell="ruolo" let-p><app-role-badge [ruolo]="p.ruolo" [full]="false" /></ng-template>
+        <ng-template appCell="overall" let-p><app-overall [value]="p.overall" [size]="30" /></ng-template>
+      </app-data-table>
+    </div>
+  }
+</div>

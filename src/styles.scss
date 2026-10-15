@@ -1,0 +1,213 @@
+@use '@angular/material' as mat;
+
+// ---------------------------------------------------------------------------
+// Design token (ispirati a Fantacalcio.it: header blu notte, accento verde,
+// card bianche su fondo grigio chiaro, badge colorati per i ruoli).
+// ---------------------------------------------------------------------------
+:root {
+  --brand-navy: #0c2340;
+  --brand-navy-2: #153a66;
+  --brand-accent: #19b866;
+  --brand-accent-dark: #0f8f4d;
+  --brand-gold: #f5b700;
+
+  --bg: #eef2f6;
+  --card: #ffffff;
+  --text: #1a2433;
+  --muted: #677487;
+  --border: #e1e7ef;
+  --row-hover: #f6f9fc;
+
+  --role-por: #f39c12;
+  --role-dif: #20a35a;
+  --role-cen: #1f6fd6;
+  --role-att: #dc3545;
+
+  --zone-final: #19b866;
+  --danger: #d63939;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgb(12 35 64 / 6%), 0 4px 14px rgb(12 35 64 / 6%);
+  --shadow-hover: 0 2px 4px rgb(12 35 64 / 8%), 0 10px 24px rgb(12 35 64 / 12%);
+  --page-gutter: 16px;
+}
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$spring-green-palette,
+        tertiary: mat.$azure-palette,
+      ),
+      typography: (
+        plain-family: 'Inter, Roboto, sans-serif',
+        brand-family: 'Inter, Roboto, sans-serif',
+      ),
+      density: 0,
+    )
+  );
+}
+
+body {
+  color-scheme: light;
+  background-color: var(--bg);
+  color: var(--text);
+  font: var(--mat-sys-body-medium);
+  font-family: Inter, Roboto, sans-serif;
+  margin: 0;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+// Componenti Material: angoli e superfici coerenti con le card
+@include mat.dialog-overrides(
+  (
+    container-shape: var(--radius),
+  )
+);
+@include mat.form-field-overrides(
+  (
+    filled-container-color: #f4f7fa,
+  )
+);
+
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px var(--page-gutter) 48px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--brand-navy);
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin: 2px 0 0;
+    font-size: 0.9rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.card-padded {
+  padding: 20px;
+}
+
+.section-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 24px 0 10px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.grid-cards {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.form-grid {
+  display: grid;
+  gap: 4px 16px;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+    .full {
+      grid-column: 1 / -1;
+    }
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+// Pulsante "pericoloso" (eliminazioni)
+.btn-danger.mat-mdc-button-base {
+  --mat-button-filled-container-color: var(--danger);
+  --mat-button-filled-label-text-color: #fff;
+  --mat-button-text-label-text-color: var(--danger);
+  --mat-button-outlined-label-text-color: var(--danger);
+}
+
+// ---------------------------------------------------------------------------
+// Toast
+// ---------------------------------------------------------------------------
+.mat-mdc-snack-bar-container.toast-success {
+  @include mat.snack-bar-overrides(
+    (
+      container-color: #0f5132,
+      supporting-text-color: #fff,
+      button-color: #9ff0c4,
+    )
+  );
+}
+
+.mat-mdc-snack-bar-container.toast-error {
+  @include mat.snack-bar-overrides(
+    (
+      container-color: #8a1c1c,
+      supporting-text-color: #fff,
+      button-color: #ffd2d2,
+    )
+  );
+}
+
+// Utility responsive
+@media (max-width: 639px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
