@@ -16,6 +16,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { catchError, EMPTY, filter, finalize, Observable, switchMap, throwError } from 'rxjs';
@@ -25,6 +26,7 @@ import { NotifyService } from '../../core/services/notify.service';
 import { ScheduleService } from '../../core/services/schedule.service';
 import { TeamsService } from '../../core/services/teams.service';
 import { ConfirmService } from '../../shared/confirm-dialog';
+import { PluralPipe } from '../../shared/plural';
 import { EmptyState, ErrorState, Loading } from '../../shared/states';
 import { TeamCrest } from '../../shared/team-crest';
 import { MatchEditData, MatchEditDialog } from './match-edit-dialog';
@@ -53,7 +55,9 @@ const SHORT_FASE: Record<Fase, string> = {
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
+    MatProgressSpinnerModule,
     MatTooltipModule,
+    PluralPipe,
     TeamCrest,
     Loading,
     ErrorState,
@@ -75,6 +79,8 @@ export class CalendarPage implements OnInit {
   protected readonly error = signal(false);
   /** generazione/eliminazione in corso: disabilita il pulsante principale */
   protected readonly busy = signal(false);
+  /** id della partita il cui dialog di modifica è in apertura (caricamento squadre in corso) */
+  protected readonly openingMatch = signal<string | null>(null);
 
   protected readonly giornate = computed(() => this.schedule()?.giornate ?? []);
 
@@ -282,8 +288,12 @@ export class CalendarPage implements OnInit {
 
   /** Apre la modifica della partita; le squadre servono per le select e si caricano al momento. */
   protected editMatch(m: Match): void {
+    // ignora i clic successivi finché il dialog non è aperto o la richiesta non è fallita
+    if (this.openingMatch() || this.dialog.openDialogs.length) return;
+    this.openingMatch.set(m.id);
     this.teamsApi.list().subscribe({
       next: (teams: Team[]) => {
+        this.openingMatch.set(null);
         this.dialog
           .open<MatchEditDialog, MatchEditData, Match>(MatchEditDialog, {
             data: { match: m, teams },
@@ -299,12 +309,17 @@ export class CalendarPage implements OnInit {
             this.load();
           });
       },
-      error: (err) => this.notify.apiError(err),
+      error: (err) => {
+        this.openingMatch.set(null);
+        this.notify.apiError(err);
+      },
     });
   }
 
   /** Apre il dialog del risultato; ricarica il calendario solo se il risultato è stato salvato. */
   protected editResult(m: Match): void {
+    // protezione dal doppio clic: un solo dialog alla volta
+    if (this.dialog.openDialogs.length) return;
     this.dialog
       .open<ResultDialog, Match, Match>(ResultDialog, {
         data: m,

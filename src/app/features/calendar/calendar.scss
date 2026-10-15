@@ -294,6 +294,11 @@
   gap: 2px;
   border-top: 1px solid var(--border);
   padding-top: 6px;
+
+  // spinner al posto dell'icona mentre si apre la modifica partita
+  mat-spinner {
+    margin: auto;
+  }
 }
 
 .rest,

@@ -49,7 +49,13 @@ interface NavItem {
         <span class="spacer"></span>
 
         @if (auth.isAdmin()) {
-          <button mat-button class="user-btn" [matMenuTriggerFor]="userMenu">
+          <!-- aria-label: sotto i 640px il testo è nascosto e resterebbe solo l'icona (aria-hidden) -->
+          <button
+            mat-button
+            class="user-btn"
+            [matMenuTriggerFor]="userMenu"
+            [attr.aria-label]="'Menu utente ' + auth.username()"
+          >
             <mat-icon>admin_panel_settings</mat-icon>
             <span class="hide-mobile">{{ auth.username() }}</span>
           </button>
@@ -61,7 +67,7 @@ interface NavItem {
             <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Esci</button>
           </mat-menu>
         } @else {
-          <a mat-stroked-button class="login-btn" routerLink="/login">
+          <a mat-stroked-button class="login-btn" routerLink="/login" aria-label="Area admin: accedi">
             <mat-icon>login</mat-icon> <span class="hide-mobile">Area admin</span>
           </a>
         }

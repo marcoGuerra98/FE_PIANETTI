@@ -10,6 +10,7 @@ import { NotifyService } from '../../core/services/notify.service';
 import { PlayersService } from '../../core/services/players.service';
 import { TeamsService } from '../../core/services/teams.service';
 import { EmptyState, ErrorState, Loading } from '../../shared/states';
+import { PluralPipe } from '../../shared/plural';
 import { TeamCrest } from '../../shared/team-crest';
 import { TeamDeleteFlow } from './team-delete';
 
@@ -17,13 +18,30 @@ import { TeamDeleteFlow } from './team-delete';
 @Component({
   selector: 'app-teams-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatTooltipModule, TeamCrest, Loading, ErrorState, EmptyState],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    TeamCrest,
+    Loading,
+    ErrorState,
+    EmptyState,
+    PluralPipe,
+  ],
   template: `
     <div class="page">
       <div class="page-header">
         <div>
           <h1>Squadre</h1>
-          <p class="subtitle">{{ teams().length }} squadre iscritte</p>
+          <p class="subtitle">
+            <!-- il contatore compare solo a dati caricati; &nbsp; riserva lo spazio della riga -->
+            @if (!loading() && !error()) {
+              {{ teams().length | plural: 'squadra iscritta' : 'squadre iscritte' }}
+            } @else {
+              &nbsp;
+            }
+          </p>
         </div>
         @if (auth.isAdmin()) {
           <div class="actions">
@@ -50,7 +68,7 @@ import { TeamDeleteFlow } from './team-delete';
                 <app-team-crest [src]="t.stemma" [name]="t.nome" [size]="72" />
                 <h2>{{ t.nome }}</h2>
                 <span class="count">
-                  <mat-icon>groups</mat-icon> {{ counts()[t.id] ?? 0 }} giocatori
+                  <mat-icon>groups</mat-icon> {{ counts()[t.id] ?? 0 | plural: 'giocatore' : 'giocatori' }}
                 </span>
               </a>
               @if (auth.isAdmin()) {

@@ -3,8 +3,8 @@
     <div>
       <h1>Giocatori</h1>
       <p class="subtitle">
-        @if (!loading()) {
-          {{ players().length }} {{ players().length === 1 ? 'giocatore' : 'giocatori' }}
+        @if (!loading() && !error()) {
+          {{ players().length | plural: 'giocatore' : 'giocatori' }}
         } @else {
           &nbsp;
         }

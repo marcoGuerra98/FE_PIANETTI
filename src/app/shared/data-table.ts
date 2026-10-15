@@ -83,7 +83,9 @@ export class CellDef {
           *matRowDef="let row; columns: columnKeys()"
           [class]="rowClass()(row)"
           [class.clickable]="clickable()"
+          [attr.tabindex]="clickable() ? 0 : null"
           (click)="clickable() && rowClick.emit(row)"
+          (keydown)="onRowKeydown($event, row)"
         ></tr>
       </table>
     </div>
@@ -134,6 +136,11 @@ export class CellDef {
     tr.clickable {
       cursor: pointer;
     }
+    tr.clickable:focus-visible {
+      outline: 2px solid var(--brand-accent-dark);
+      outline-offset: -2px;
+      background: var(--row-hover);
+    }
     tr.mat-mdc-row:hover {
       background: var(--row-hover);
     }
@@ -174,6 +181,20 @@ export class DataTable<T> {
     const key = this.idKey();
     return key ? row[key] : index;
   };
+
+  /**
+   * Attivazione da tastiera delle righe cliccabili: Invio e Spazio emettono `rowClick`.
+   * La riga mantiene la semantica di tabella (nessun `role` sovrascritto) ed è raggiungibile con Tab.
+   * Si ignorano i tasti premuti su elementi interni (es. il link della squadra), che fanno
+   * risalire l'evento fino alla riga ma devono attivare solo sé stessi.
+   */
+  protected onRowKeydown(event: KeyboardEvent, row: T): void {
+    if (!this.clickable() || event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault(); // evita lo scroll della pagina con lo Spazio
+      this.rowClick.emit(row);
+    }
+  }
 
   protected cellValue(col: TableColumn<T>, row: T): unknown {
     return col.value ? col.value(row) : (row as Record<string, unknown>)[col.key];

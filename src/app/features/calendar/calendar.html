@@ -5,7 +5,7 @@
       @if (schedule(); as s) {
         <p class="subtitle">
           @if (s.totale_partite) {
-            {{ s.partite_giocate }} di {{ s.totale_partite }} partite giocate
+            {{ s.partite_giocate }} di {{ s.totale_partite | plural: 'partita giocata' : 'partite giocate' }}
           } @else {
             Nessuna partita in programma
           }
@@ -170,8 +170,19 @@
                 <button mat-button (click)="editResult(m)">
                   <mat-icon>scoreboard</mat-icon> {{ m.giocata ? 'Modifica risultato' : 'Inserisci risultato' }}
                 </button>
-                <button mat-icon-button (click)="editMatch(m)" matTooltip="Modifica data e squadre" aria-label="Modifica partita">
-                  <mat-icon>edit_calendar</mat-icon>
+                <button
+                  mat-icon-button
+                  (click)="editMatch(m)"
+                  [disabled]="openingMatch() !== null"
+                  [attr.aria-busy]="openingMatch() === m.id"
+                  matTooltip="Modifica data e squadre"
+                  aria-label="Modifica partita"
+                >
+                  @if (openingMatch() === m.id) {
+                    <mat-spinner diameter="20" aria-hidden="true" />
+                  } @else {
+                    <mat-icon>edit_calendar</mat-icon>
+                  }
                 </button>
                 @if (m.giocata) {
                   <button mat-icon-button class="btn-danger" (click)="clearResult(m)" matTooltip="Annulla risultato" aria-label="Annulla risultato">

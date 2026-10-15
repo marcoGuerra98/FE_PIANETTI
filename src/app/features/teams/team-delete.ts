@@ -5,6 +5,7 @@ import { Team, TeamDeleteResult } from '../../core/models';
 import { NotifyService } from '../../core/services/notify.service';
 import { TeamsService } from '../../core/services/teams.service';
 import { ConfirmService } from '../../shared/confirm-dialog';
+import { plural } from '../../shared/plural';
 
 /** Campo `details` della risposta 409: le partite giocate che andrebbero perse. */
 interface PlayedConflict {
@@ -76,8 +77,10 @@ export class TeamDeleteFlow {
   /** Messaggio riepilogativo per il toast di successo. */
   describe(res: TeamDeleteResult): string {
     const parts = ['Squadra eliminata'];
-    if (res.giocatori_svincolati) parts.push(`${res.giocatori_svincolati} giocatori svincolati`);
-    if (res.partite_rimosse) parts.push(`${res.partite_rimosse} partite rimosse`);
+    if (res.giocatori_svincolati) {
+      parts.push(plural(res.giocatori_svincolati, 'giocatore svincolato', 'giocatori svincolati'));
+    }
+    if (res.partite_rimosse) parts.push(plural(res.partite_rimosse, 'partita rimossa', 'partite rimosse'));
     return parts.join(' · ');
   }
 }

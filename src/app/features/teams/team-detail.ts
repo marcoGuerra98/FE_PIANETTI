@@ -13,6 +13,7 @@ import { StandingsService } from '../../core/services/standings.service';
 import { TeamsService } from '../../core/services/teams.service';
 import { PlayerCard } from '../../shared/player-card';
 import { EmptyState, ErrorState, Loading } from '../../shared/states';
+import { PluralPipe } from '../../shared/plural';
 import { TeamCrest } from '../../shared/team-crest';
 import { TeamDeleteFlow } from './team-delete';
 
@@ -28,7 +29,17 @@ const PLURAL: Record<Ruolo, string> = {
 @Component({
   selector: 'app-team-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, MatIconModule, TeamCrest, PlayerCard, Loading, ErrorState, EmptyState],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    TeamCrest,
+    PlayerCard,
+    Loading,
+    ErrorState,
+    EmptyState,
+    PluralPipe,
+  ],
   template: `
     <div class="page">
       <a mat-button routerLink="/teams" class="back"><mat-icon>arrow_back</mat-icon> Squadre</a>
@@ -42,7 +53,7 @@ const PLURAL: Record<Ruolo, string> = {
           <app-team-crest [src]="t.stemma" [name]="t.nome" [size]="88" />
           <div class="title">
             <h1>{{ t.nome }}</h1>
-            <span>{{ t.giocatori.length }} giocatori in rosa</span>
+            <span>{{ t.giocatori.length | plural: 'giocatore in rosa' : 'giocatori in rosa' }}</span>
           </div>
           @if (auth.isAdmin()) {
             <div class="admin">

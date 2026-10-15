@@ -20,6 +20,7 @@ import { ConfirmService } from '../../shared/confirm-dialog';
 import { CellDef, DataTable, TableColumn } from '../../shared/data-table';
 import { OverallBadge } from '../../shared/overall-badge';
 import { PlayerCard } from '../../shared/player-card';
+import { PluralPipe } from '../../shared/plural';
 import { RoleBadge } from '../../shared/role-badge';
 import { EmptyState, ErrorState, Loading } from '../../shared/states';
 
@@ -54,6 +55,7 @@ const VIEW_KEY = 'pianetti.players.view';
     Loading,
     ErrorState,
     EmptyState,
+    PluralPipe,
   ],
   templateUrl: './players-list.html',
   styleUrl: './players-list.scss',
