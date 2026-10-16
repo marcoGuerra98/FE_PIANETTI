@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_URL } from '../api';
-import { Team, TeamDeleteResult, TeamDetail, TeamInput } from '../models';
+import { Player, Team, TeamDeleteResult, TeamDetail, TeamInput } from '../models';
 
 /** Accesso alle API delle squadre (`/teams`). */
 @Injectable({ providedIn: 'root' })
@@ -34,6 +34,14 @@ export class TeamsService {
   delete(id: string, force = false): Observable<TeamDeleteResult> {
     const params = new HttpParams().set('force', force);
     return this.http.delete<TeamDeleteResult>(`${this.base}/${id}`, { params });
+  }
+
+  /**
+   * Assegna un giocatore svincolato alla squadra (admin); restituisce il giocatore aggiornato.
+   * Idempotente se è già in questa squadra; 409 se appartiene a un'altra squadra.
+   */
+  assignPlayer(teamId: string, playerId: string): Observable<Player> {
+    return this.http.put<Player>(`${this.base}/${teamId}/players/${playerId}`, null);
   }
 
   /** Carica lo stemma come multipart (`file`). */

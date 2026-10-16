@@ -1,11 +1,16 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, from, switchMap } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
+import { TournamentResetResult } from '../core/models';
+import { RouteReloader } from '../core/route-reload';
 import { NotifyService } from '../core/services/notify.service';
+import { plural } from '../shared/plural';
 
 /** Voce di navigazione principale. */
 interface NavItem {
@@ -63,6 +68,9 @@ interface NavItem {
             <a mat-menu-item routerLink="/account/password">
               <mat-icon>key</mat-icon> Cambia password
             </a>
+            <button mat-menu-item class="danger-item" (click)="openReset()">
+              <mat-icon>restart_alt</mat-icon> Fine torneo / Reset
+            </button>
             <mat-divider />
             <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Esci</button>
           </mat-menu>
@@ -169,6 +177,11 @@ interface NavItem {
         margin-left: -8px;
       }
     }
+    /* voce di pericolo nel menu utente (il pannello del menu è fuori dall'host) */
+    :host ::ng-deep .danger-item,
+    :host ::ng-deep .danger-item .mat-icon {
+      color: var(--danger);
+    }
     :host ::ng-deep .active-item {
       background: rgb(25 184 102 / 12%);
     }
@@ -178,6 +191,8 @@ export class Header {
   protected readonly auth = inject(AuthService);
   private router = inject(Router);
   private notify = inject(NotifyService);
+  private dialog = inject(MatDialog);
+  private reloader = inject(RouteReloader);
 
   /** voci condivise tra navigazione desktop e menu mobile */
   protected readonly nav: NavItem[] = [
@@ -185,7 +200,36 @@ export class Header {
     { path: '/calendar', label: 'Calendario', icon: 'calendar_month' },
     { path: '/players', label: 'Giocatori', icon: 'person' },
     { path: '/teams', label: 'Squadre', icon: 'shield' },
+    { path: '/draw', label: 'Sorteggio', icon: 'casino' },
   ];
+
+  /**
+   * Fine torneo: apre il dialog di reset; a reset riuscito notifica i conteggi e ricarica
+   * la pagina corrente, così i dati mostrati (calendario, rose, goal) risultano aggiornati.
+   */
+  protected openReset(): void {
+    if (this.dialog.openDialogs.length) return;
+    // il dialog è caricato in lazy: serve solo all'admin e raramente
+    from(import('../features/tournament/reset-dialog'))
+      .pipe(
+        switchMap(({ ResetDialog }) =>
+          this.dialog
+            .open<InstanceType<typeof ResetDialog>, void, TournamentResetResult>(ResetDialog, {
+              width: '480px',
+              maxWidth: 'calc(100vw - 32px)',
+            })
+            .afterClosed(),
+        ),
+        filter(Boolean),
+      )
+      .subscribe((res) => {
+        this.notify.success(
+          `Torneo azzerato: ${plural(res.partite_rimosse, 'partita rimossa', 'partite rimosse')}, ` +
+            `${plural(res.giocatori_aggiornati, 'giocatore aggiornato', 'giocatori aggiornati')}`,
+        );
+        this.reloader.reload();
+      });
+  }
 
   /** Logout volontario: a differenza di quello per 401, torna alla classifica pubblica. */
   protected logout(): void {

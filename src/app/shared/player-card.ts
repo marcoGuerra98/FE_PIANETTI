@@ -5,18 +5,28 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { Player } from '../core/models';
 import { Avatar } from './avatar';
+import { FasciaBadge } from './fascia-badge';
 import { OverallBadge } from './overall-badge';
 import { RoleBadge } from './role-badge';
 
 /**
- * Card giocatore: foto, ruolo, nome, squadra, overall e goal.
+ * Card giocatore: foto, ruolo, nome, fascia, squadra, overall e goal.
  * L'intera card porta al dettaglio; con `admin` compaiono le azioni di modifica ed eliminazione,
  * che vengono solo emesse: la gestione spetta alla pagina che ospita la card.
  */
 @Component({
   selector: 'app-player-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Avatar, RoleBadge, OverallBadge, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [
+    RouterLink,
+    Avatar,
+    RoleBadge,
+    OverallBadge,
+    FasciaBadge,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+  ],
   template: `
     <a class="body" [routerLink]="['/players', player().id]">
       <div class="photo-wrap">
@@ -26,8 +36,13 @@ import { RoleBadge } from './role-badge';
       <div class="info">
         <span class="surname">{{ player().cognome }}</span>
         <span class="name">{{ player().nome }}</span>
-        <span class="team" [class.free]="!player().squadra_nome">
-          {{ player().squadra_nome ?? 'Svincolato' }}
+        <span class="meta">
+          @if (player().fascia) {
+            <app-fascia-badge [fascia]="player().fascia" />
+          }
+          <span class="team" [class.free]="!player().squadra_nome">
+            {{ player().squadra_nome ?? 'Svincolato' }}
+          </span>
         </span>
       </div>
       <div class="stats">
@@ -106,8 +121,14 @@ import { RoleBadge } from './role-badge';
       color: var(--muted);
       font-size: 0.85rem;
     }
-    .team {
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       margin-top: 4px;
+      min-width: 0;
+    }
+    .team {
       font-size: 0.78rem;
       font-weight: 600;
       color: var(--brand-navy-2);

@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, filter, forkJoin, of, switchMap } from 'rxjs';
 import { apiErrorMessage } from '../../core/api';
 import { AuthService } from '../../core/auth/auth.service';
-import { Player, RUOLI, Ruolo, StandingRow, TeamDetail } from '../../core/models';
+import { Player, RUOLI, RUOLO_PLURAL, StandingRow, TeamDetail } from '../../core/models';
 import { PlayersService } from '../../core/services/players.service';
 import { ConfirmService } from '../../shared/confirm-dialog';
 import { NotifyService } from '../../core/services/notify.service';
@@ -15,15 +16,8 @@ import { PlayerCard } from '../../shared/player-card';
 import { EmptyState, ErrorState, Loading } from '../../shared/states';
 import { PluralPipe } from '../../shared/plural';
 import { TeamCrest } from '../../shared/team-crest';
+import { AddPlayerDialog } from './add-player-dialog';
 import { TeamDeleteFlow } from './team-delete';
-
-/** Titoli delle sezioni della rosa. */
-const PLURAL: Record<Ruolo, string> = {
-  POR: 'Portieri',
-  DIF: 'Difensori',
-  CEN: 'Centrocampisti',
-  ATT: 'Attaccanti',
-};
 
 /** Dettaglio squadra (/teams/:id): intestazione, statistiche di classifica e rosa divisa per ruolo. */
 @Component({
@@ -57,9 +51,9 @@ const PLURAL: Record<Ruolo, string> = {
           </div>
           @if (auth.isAdmin()) {
             <div class="admin">
-              <a mat-stroked-button [routerLink]="['/players/new']" [queryParams]="{ squadra: t.id }">
+              <button mat-stroked-button (click)="addPlayers()">
                 <mat-icon>person_add</mat-icon> Aggiungi giocatore
-              </a>
+              </button>
               <a mat-stroked-button [routerLink]="['/teams', t.id, 'edit']"><mat-icon>edit</mat-icon> Modifica</a>
               <button mat-stroked-button class="btn-danger" (click)="remove()"><mat-icon>delete</mat-icon> Elimina</button>
             </div>
@@ -78,7 +72,13 @@ const PLURAL: Record<Ruolo, string> = {
         }
 
         @if (!t.giocatori.length) {
-          <app-empty-state icon="groups" title="Nessun giocatore in rosa" />
+          <app-empty-state icon="groups" title="Nessun giocatore in rosa">
+            @if (auth.isAdmin()) {
+              <button mat-flat-button (click)="addPlayers()">
+                <mat-icon>person_add</mat-icon> Aggiungi uno svincolato
+              </button>
+            }
+          </app-empty-state>
         }
         @for (group of roster(); track group.ruolo) {
           <h2 class="section-title">{{ group.label }} · {{ group.players.length }}</h2>
@@ -179,6 +179,7 @@ export class TeamDetailPage {
   private standingsApi = inject(StandingsService);
   private deleteFlow = inject(TeamDeleteFlow);
   private notify = inject(NotifyService);
+  private dialog = inject(MatDialog);
   protected readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
 
@@ -195,7 +196,7 @@ export class TeamDetailPage {
     const players = this.team()?.giocatori ?? [];
     return RUOLI.map((ruolo) => ({
       ruolo,
-      label: PLURAL[ruolo],
+      label: RUOLO_PLURAL[ruolo],
       players: players.filter((p: Player) => p.ruolo === ruolo),
     })).filter((g) => g.players.length);
   });
@@ -227,6 +228,29 @@ export class TeamDetailPage {
         this.error.set(apiErrorMessage(err, 'Squadra non trovata'));
         this.loading.set(false);
       },
+    });
+  }
+
+  /**
+   * Apre il dialog degli svincolati. A ogni assegnazione la rosa si aggiorna in background,
+   * senza stato di caricamento a pagina intera, mentre il dialog resta aperto.
+   */
+  protected addPlayers(): void {
+    const t = this.team();
+    if (!t || this.dialog.openDialogs.length) return;
+    const ref = this.dialog.open(AddPlayerDialog, {
+      data: { id: t.id, nome: t.nome },
+      width: '560px',
+      maxWidth: 'calc(100vw - 32px)',
+    });
+    ref.componentInstance.assigned.subscribe(() => this.refreshRoster());
+  }
+
+  /** Ricarica la sola squadra mantenendo visibile la rosa attuale. */
+  private refreshRoster(): void {
+    this.teamsApi.get(this.id()).subscribe({
+      next: (team) => this.team.set(team),
+      error: (err) => this.notify.apiError(err, 'Impossibile aggiornare la rosa'),
     });
   }
 

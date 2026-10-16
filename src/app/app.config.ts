@@ -4,9 +4,15 @@ import { registerLocaleData } from '@angular/common';
 import localeIt from '@angular/common/locales/it';
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
-import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import {
+  provideRouter,
+  RouteReuseStrategy,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+} from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { ReloadableRouteReuseStrategy } from './core/route-reload';
 
 // Dati di localizzazione italiani per DatePipe e affini (nomi di giorni e mesi).
 registerLocaleData(localeIt);
@@ -25,6 +31,8 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
     ),
+    // permette di ricaricare la pagina corrente ricreandone i componenti (RouteReloader)
+    { provide: RouteReuseStrategy, useExisting: ReloadableRouteReuseStrategy },
     // interceptor funzionale: Bearer token e gestione centralizzata dei 401
     provideHttpClient(withInterceptors([authInterceptor])),
     { provide: LOCALE_ID, useValue: 'it-IT' },

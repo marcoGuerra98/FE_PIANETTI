@@ -10,15 +10,26 @@ import { NotifyService } from '../../core/services/notify.service';
 import { PlayersService } from '../../core/services/players.service';
 import { Avatar } from '../../shared/avatar';
 import { ConfirmService } from '../../shared/confirm-dialog';
+import { FasciaBadge } from '../../shared/fascia-badge';
 import { OverallBadge } from '../../shared/overall-badge';
 import { RoleBadge } from '../../shared/role-badge';
 import { ErrorState, Loading } from '../../shared/states';
 
-/** Scheda giocatore (/players/:id): profilo, statistiche, descrizione e azioni admin. */
+/** Scheda giocatore (/players/:id): profilo, statistiche (overall, goal, ruolo, fascia), descrizione e azioni admin. */
 @Component({
   selector: 'app-player-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, MatIconModule, Avatar, RoleBadge, OverallBadge, Loading, ErrorState],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    Avatar,
+    RoleBadge,
+    FasciaBadge,
+    OverallBadge,
+    Loading,
+    ErrorState,
+  ],
   template: `
     <div class="page">
       <a mat-button routerLink="/players" class="back"><mat-icon>arrow_back</mat-icon> Giocatori</a>
@@ -68,6 +79,12 @@ import { ErrorState, Loading } from '../../shared/states';
           <div class="stat card">
             <span class="value role-name">{{ ruoloLabel[p.ruolo] }}</span>
             <span class="label">Ruolo</span>
+          </div>
+          <div class="stat card">
+            <span class="value fascia-value">
+              <app-fascia-badge [fascia]="p.fascia" [full]="true" />
+            </span>
+            <span class="label">Fascia · 1 = migliore</span>
           </div>
         </section>
 
@@ -151,7 +168,7 @@ import { ErrorState, Loading } from '../../shared/states';
     }
     .stats {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
       margin-bottom: 16px;
     }
@@ -174,6 +191,11 @@ import { ErrorState, Loading } from '../../shared/states';
     .role-name {
       font-size: 1rem;
     }
+    .fascia-value app-fascia-badge {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 0.9rem;
+    }
     .label {
       font-size: 0.75rem;
       font-weight: 700;
@@ -188,6 +210,9 @@ import { ErrorState, Loading } from '../../shared/states';
       white-space: pre-line;
     }
     @media (max-width: 639px) {
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
       .hero-content {
         justify-content: center;
         text-align: center;

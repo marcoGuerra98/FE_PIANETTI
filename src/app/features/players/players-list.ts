@@ -11,13 +11,23 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, filter, map, of, switchMap, tap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
-import { Player, PlayerFilters, PlayerSort, RUOLI, Ruolo, Team } from '../../core/models';
+import {
+  FASCE,
+  Fascia,
+  Player,
+  PlayerFilters,
+  PlayerSort,
+  RUOLI,
+  Ruolo,
+  Team,
+} from '../../core/models';
 import { NotifyService } from '../../core/services/notify.service';
 import { PlayersService } from '../../core/services/players.service';
 import { TeamsService } from '../../core/services/teams.service';
 import { Avatar } from '../../shared/avatar';
 import { ConfirmService } from '../../shared/confirm-dialog';
 import { CellDef, DataTable, TableColumn } from '../../shared/data-table';
+import { FasciaBadge } from '../../shared/fascia-badge';
 import { OverallBadge } from '../../shared/overall-badge';
 import { PlayerCard } from '../../shared/player-card';
 import { PluralPipe } from '../../shared/plural';
@@ -30,7 +40,7 @@ type ViewMode = 'cards' | 'table';
 const VIEW_KEY = 'pianetti.players.view';
 
 /**
- * Elenco giocatori (/players) con ricerca, filtri per squadra e ruolo, ordinamento
+ * Elenco giocatori (/players) con ricerca, filtri per squadra, ruolo e fascia, ordinamento
  * e vista a card o a tabella. Il filtraggio avviene lato server.
  */
 @Component({
@@ -51,6 +61,7 @@ const VIEW_KEY = 'pianetti.players.view';
     CellDef,
     Avatar,
     RoleBadge,
+    FasciaBadge,
     OverallBadge,
     Loading,
     ErrorState,
@@ -69,10 +80,12 @@ export class PlayersList {
   protected readonly auth = inject(AuthService);
 
   protected readonly ruoli = RUOLI;
+  protected readonly fasce = FASCE;
 
   // Filtri
   protected readonly q = signal('');
   protected readonly ruolo = signal<Ruolo | null>(null);
+  protected readonly fascia = signal<Fascia | null>(null);
   /** '' = tutte, 'free' = svincolati, altrimenti id squadra */
   protected readonly team = signal<string>('');
   protected readonly sort = signal<PlayerSort>('overall_desc');
@@ -87,7 +100,9 @@ export class PlayersList {
   private readonly reloadTick = signal(0);
 
   /** true se è attivo almeno un filtro: cambia il messaggio dello stato vuoto */
-  protected readonly hasFilters = computed(() => !!(this.q().trim() || this.ruolo() || this.team()));
+  protected readonly hasFilters = computed(
+    () => !!(this.q().trim() || this.ruolo() || this.fascia() || this.team()),
+  );
 
   /**
    * Filtri pronti per l'API. Il valore 'free' della select squadra diventa `svincolati=true`;
@@ -96,6 +111,7 @@ export class PlayersList {
   private readonly filters = computed<PlayerFilters & { tick: number }>(() => ({
     q: this.q().trim() || null,
     ruolo: this.ruolo(),
+    fascia: this.fascia(),
     squadra_id: this.team() && this.team() !== 'free' ? this.team() : null,
     svincolati: this.team() === 'free',
     sort: this.sort(),
@@ -106,6 +122,13 @@ export class PlayersList {
     { key: 'giocatore', header: 'Giocatore' },
     { key: 'ruolo', header: 'Ruolo', align: 'center', width: '70px' },
     { key: 'squadra', header: 'Squadra', value: (p) => p.squadra_nome ?? 'Svincolato', hideOnMobile: true },
+    {
+      key: 'fascia',
+      header: 'Fascia',
+      align: 'center',
+      width: '70px',
+      title: 'Fascia (1 = migliore, 4 = peggiore)',
+    },
     { key: 'goal', header: 'Gol', align: 'center', width: '60px' },
     { key: 'overall', header: 'OVR', align: 'center', width: '70px', title: 'Overall' },
   ];
@@ -148,10 +171,11 @@ export class PlayersList {
     this.reloadTick.update((v) => v + 1);
   }
 
-  /** Azzera ricerca, ruolo e squadra (l'ordinamento resta invariato). */
+  /** Azzera ricerca, ruolo, fascia e squadra (l'ordinamento resta invariato). */
   protected resetFilters(): void {
     this.q.set('');
     this.ruolo.set(null);
+    this.fascia.set(null);
     this.team.set('');
   }
 

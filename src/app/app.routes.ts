@@ -57,6 +57,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/teams/team-detail').then((m) => m.TeamDetailPage),
   },
 
+  // Sorteggio: consultazione pubblica, assegnazione dei giocatori solo per l'admin
+  {
+    path: 'draw',
+    title: 'Sorteggio',
+    loadComponent: () => import('./features/draw/draw').then((m) => m.DrawPage),
+  },
+
   // Calendario e classifiche
   {
     path: 'calendar',

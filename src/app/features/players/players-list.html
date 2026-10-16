@@ -46,16 +46,52 @@
         <mat-option value="overall_desc">Overall (dal più alto)</mat-option>
         <mat-option value="overall_asc">Overall (dal più basso)</mat-option>
         <mat-option value="nome">Cognome</mat-option>
+        <mat-option value="ruolo">Ruolo</mat-option>
       </mat-select>
     </mat-form-field>
 
-    <div class="roles" role="group" aria-label="Filtra per ruolo">
-      <button class="chip" [class.on]="!ruolo()" (click)="ruolo.set(null)">Tutti</button>
-      @for (r of ruoli; track r) {
-        <button class="chip" [class.on]="ruolo() === r" (click)="ruolo.set(ruolo() === r ? null : r)">
-          <app-role-badge [ruolo]="r" />
+    <div class="chip-filters">
+      <div class="roles" role="group" aria-label="Filtra per ruolo">
+        <button
+          class="chip"
+          [class.on]="!ruolo()"
+          [attr.aria-pressed]="!ruolo()"
+          (click)="ruolo.set(null)"
+        >
+          Tutti
         </button>
-      }
+        @for (r of ruoli; track r) {
+          <button
+            class="chip"
+            [class.on]="ruolo() === r"
+            [attr.aria-pressed]="ruolo() === r"
+            (click)="ruolo.set(ruolo() === r ? null : r)"
+          >
+            <app-role-badge [ruolo]="r" />
+          </button>
+        }
+      </div>
+
+      <div class="roles" role="group" aria-label="Filtra per fascia">
+        <button
+          class="chip"
+          [class.on]="!fascia()"
+          [attr.aria-pressed]="!fascia()"
+          (click)="fascia.set(null)"
+        >
+          Tutte le fasce
+        </button>
+        @for (f of fasce; track f) {
+          <button
+            class="chip"
+            [class.on]="fascia() === f"
+            [attr.aria-pressed]="fascia() === f"
+            (click)="fascia.set(fascia() === f ? null : f)"
+          >
+            <app-fascia-badge [fascia]="f" />
+          </button>
+        }
+      </div>
     </div>
 
     <mat-button-toggle-group
@@ -101,6 +137,7 @@
           </span>
         </ng-template>
         <ng-template appCell="ruolo" let-p><app-role-badge [ruolo]="p.ruolo" [full]="false" /></ng-template>
+        <ng-template appCell="fascia" let-p><app-fascia-badge [fascia]="p.fascia" /></ng-template>
         <ng-template appCell="overall" let-p><app-overall [value]="p.overall" [size]="30" /></ng-template>
       </app-data-table>
     </div>

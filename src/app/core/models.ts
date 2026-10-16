@@ -11,6 +11,18 @@ export const RUOLO_LABEL: Record<Ruolo, string> = {
   CEN: 'Centrocampista',
   ATT: 'Attaccante',
 };
+/** Titoli plurali dei ruoli, per le sezioni raggruppate. */
+export const RUOLO_PLURAL: Record<Ruolo, string> = {
+  POR: 'Portieri',
+  DIF: 'Difensori',
+  CEN: 'Centrocampisti',
+  ATT: 'Attaccanti',
+};
+
+/** Fascia di valore del giocatore: 1 = migliore, 4 = peggiore. */
+export type Fascia = 1 | 2 | 3 | 4;
+/** Fasce nell'ordine di visualizzazione (dalla migliore alla peggiore). */
+export const FASCE: Fascia[] = [1, 2, 3, 4];
 
 /** Giocatore come restituito dalle API (`PlayerOut`). */
 export interface Player {
@@ -22,6 +34,8 @@ export interface Player {
   /** nome della squadra, aggiunto dal backend per la visualizzazione */
   squadra_nome: string | null;
   overall: number;
+  /** fascia 1-4 (1 = migliore); null se non assegnata */
+  fascia: Fascia | null;
   descrizione: string;
   /** derivato dai marcatori delle partite giocate: non è modificabile dal client */
   goal: number;
@@ -36,19 +50,32 @@ export interface PlayerInput {
   ruolo: Ruolo;
   squadra_id: string | null;
   overall: number;
+  /** opzionale: null = non assegnata */
+  fascia?: Fascia | null;
   descrizione: string;
 }
 
 /** Ordinamenti supportati dal parametro `sort` di `GET /players`. */
-export type PlayerSort = 'overall_desc' | 'overall_asc' | 'nome';
+export type PlayerSort = 'overall_desc' | 'overall_asc' | 'nome' | 'ruolo';
+
+/** Stato di tesseramento per il filtro `stato` di `GET /players`. */
+export type PlayerStato = 'svincolato' | 'assegnato';
 
 /** Filtri di `GET /players`, inviati come query string. */
 export interface PlayerFilters {
   ruolo?: Ruolo | null;
   squadra_id?: string | null;
   svincolati?: boolean;
+  fascia?: Fascia | null;
+  stato?: PlayerStato | null;
   q?: string | null;
   sort?: PlayerSort;
+}
+
+/** Esito di `POST /tournament/reset`. */
+export interface TournamentResetResult {
+  giocatori_aggiornati: number;
+  partite_rimosse: number;
 }
 
 /** Squadra (`Team`). */

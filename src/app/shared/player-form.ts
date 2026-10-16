@@ -5,7 +5,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Player, PlayerInput, RUOLI, RUOLO_LABEL, Ruolo, Team } from '../core/models';
+import {
+  FASCE,
+  Fascia,
+  Player,
+  PlayerInput,
+  RUOLI,
+  RUOLO_LABEL,
+  Ruolo,
+  Team,
+} from '../core/models';
+import { FasciaBadge } from './fascia-badge';
 import { ImagePicker } from './image-picker';
 import { RoleBadge } from './role-badge';
 
@@ -33,6 +43,7 @@ export interface PlayerFormValue {
     MatIconModule,
     ImagePicker,
     RoleBadge,
+    FasciaBadge,
   ],
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -86,7 +97,20 @@ export interface PlayerFormValue {
           <mat-error>Inserisci un valore intero tra 1 e 99</mat-error>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full">
+        <mat-form-field appearance="outline">
+          <mat-label>Fascia</mat-label>
+          <mat-select formControlName="fascia">
+            <mat-option [value]="null"><em>Non assegnata</em></mat-option>
+            @for (f of fasce; track f) {
+              <mat-option [value]="f">
+                <span class="role-opt"><app-fascia-badge [fascia]="f" /> Fascia {{ f }}</span>
+              </mat-option>
+            }
+          </mat-select>
+          <mat-hint>1 = migliore, 4 = peggiore</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
           <mat-label>Squadra</mat-label>
           <mat-select formControlName="squadra_id">
             <mat-option [value]="null"><em>Svincolato</em></mat-option>
@@ -138,6 +162,7 @@ export class PlayerForm {
 
   protected readonly ruoli = RUOLI;
   protected readonly label = RUOLO_LABEL;
+  protected readonly fasce = FASCE;
   /** ultima scelta dell'image picker (non fa parte del FormGroup) */
   protected photo: File | null | undefined = undefined;
 
@@ -151,6 +176,7 @@ export class PlayerForm {
       Validators.max(99),
       Validators.pattern(/^\d+$/), // solo interi, come richiede il backend
     ]),
+    fascia: this.fb.control<Fascia | null>(null),
     squadra_id: this.fb.control<string | null>(null),
     descrizione: ['', Validators.maxLength(1000)],
   });
@@ -165,6 +191,7 @@ export class PlayerForm {
           cognome: p.cognome,
           ruolo: p.ruolo,
           overall: p.overall,
+          fascia: p.fascia ?? null,
           squadra_id: p.squadra_id,
           descrizione: p.descrizione,
         });
@@ -188,6 +215,7 @@ export class PlayerForm {
         cognome: v.cognome.trim(),
         ruolo: v.ruolo as Ruolo,
         overall: Number(v.overall),
+        fascia: v.fascia,
         squadra_id: v.squadra_id,
         descrizione: v.descrizione.trim(),
       },
